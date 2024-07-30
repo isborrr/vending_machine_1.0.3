@@ -1,7 +1,10 @@
 package vending_machine_application;
 
+import java.io.*;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 //Create `VendingMachine` Class**
 public class VendingMachine {
@@ -35,14 +38,19 @@ public class VendingMachine {
 //         If so, decrease the quantity by 1 and return the product.
 //         If not, print "Product not available" and return null.
 
-    public Product dispenseProduct(String code) {
+    public Product dispenseProduct(String code) throws IOException {
         if (code == null || code.isEmpty()) {
             throw new IllegalArgumentException("Code cannot be null or empty");
         }
         Slot<? extends Product> slot = slots.get(code);
         if (slot.getQuantity() > 0) {
             slot.setQuantity(slot.getQuantity() - 1);
+            System.out.println("Testing receipt ");
+            this.printReceipt(slot.getProduct());
             return slot.getProduct();
+        } else if (slot.getQuantity() == 0 ) {
+            sendVendorNotification(slot.getProduct());
+            return null;
         } else {
             System.out.println("Product not available");
             return null;
@@ -56,6 +64,80 @@ public class VendingMachine {
             System.out.println(entry.getKey() + ", " + entry.getValue());
         }
     }
+
+    public <T extends Product> void printReceipt(T product) throws IOException {
+        BufferedWriter writer = null;
+        try {
+            writer = new BufferedWriter(new FileWriter("receipt.txt"));
+            writer.write(product.toString());
+            writer.newLine();
+            // Creating object of date class
+            Date d1 = new Date();
+
+            // Printing the value stored in above object
+            System.out.println("Date is:  " + d1);
+            writer.close();
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
+        finally {
+            if (writer != null){
+                writer.close();
+            }
+        }
+    }
+    public <T extends Product> void sendVendorNotification(T product) throws IOException{
+        BufferedWriter writer = null;
+        try{
+            writer = new BufferedWriter(new FileWriter("notification_"+product.getName()+".txt"));
+            writer.write("Product: "+ product.getName()+" Is out of stock");
+            writer.newLine();
+        }catch (IOException e) {
+            e.printStackTrace();
+        }   finally {
+            if (writer != null){
+                writer.close();
+            }
+        }
+    }
+
+    public void loadProductsFromCsv(String fileName) throws IOException, FileNotFoundException {
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(fileName));
+            while (reader.ready()) {
+                String [] line = reader.readLine().split(",");
+                String code = line[0];
+                String productType = line[1];
+                String productName = line[2];
+                double price = Double.parseDouble(line[3]);
+                int quantity = Integer.parseInt(line[4]);
+                if (productType.equalsIgnoreCase("Snack")) {
+                    Snack snack = new Snack(productName, price, false);
+                    Slot<Product> s1 = new Slot<>(snack, quantity);
+                    addProduct(code, s1);
+
+                }else if(productType.equalsIgnoreCase("Beverage")) {
+                    Random random = new Random();
+                   Beverage beverage = new Beverage(productName, price, random.nextDouble(10)+1);
+                    Slot<Product> b1 = new Slot<>(beverage, quantity);
+                    addProduct(code, b1);
+
+                }
+                //addProduct
+
+            }
+
+
+        }catch (FileNotFoundException fe) {
+            fe.printStackTrace();
+        }finally {
+            reader.close();
+        }
+
+    }
+
+
 }
 
 

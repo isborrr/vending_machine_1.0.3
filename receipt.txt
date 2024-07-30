@@ -1,0 +1,1 @@
+Snack{name='Chocolate', price=2.0, isVegan=false}
